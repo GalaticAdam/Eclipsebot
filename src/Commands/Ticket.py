@@ -8,6 +8,13 @@ import io
 import discord
 from datetime import datetime, timezone
 
+Rcon_Host = "192.168.1.239"
+Rcon_Port = 6009
+Rcon_Password = "11454"
+Admin_Role = int(os.getenv("Admin_roll"))
+
+
+
 
 async def send_ticket_transcript(interaction, tickets, bot):
     # Find the ticket associated with this channel
@@ -151,7 +158,6 @@ async def send_ticket_transcript(interaction, tickets, bot):
 
 @bot.tree.command(name="ticket",description="Creates a Ticket")
 @app_commands.allowed_installs(guilds=True, users=True)
-@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 async def createticket(interaction: discord.Interaction):
     if not TICKET_CREATE_CHANNEL:
         pass
@@ -208,7 +214,7 @@ async def createticket(interaction: discord.Interaction):
         )
         
         tickets.update_ticket(ticket["id"],channel_id=ticket_channel.id)
-        await interaction.response.send_message("Ticket has been created here " + ticket_channel.mention)
+        await interaction.response.send_message("Ticket has been created here " + ticket_channel.mention, ephemeral=True)
     
     async def IssueTicket(interaction: discord.Integration):
         IGN_ = IGN.value
@@ -274,8 +280,7 @@ async def remove(interaction: discord.Integration, user_id: discord.Member):
     
     
 @bot.tree.command(name="closeticket",description="Closes a Ticket")
-@app_commands.allowed_installs(guilds=True, users=True)
-@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@app_commands.default_permissions(manage_channels=True)
 async def closeticket(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
     success = await send_ticket_transcript(
@@ -304,3 +309,26 @@ async def closeticket(interaction: discord.Interaction):
     # Delete the ticket channel
     await interaction.channel.delete()
     
+    
+def rcon_cmd(command):
+    with mcrcon.MCRcon(Rcon_Host, Rcon_Password, port=Rcon_Port) as mcr:
+        return mcr.command(command)
+    
+    
+@bot.tree.command(name="whitelist",description="Adds a user to the whitelist role")
+@app_commands.default_permissions(manage_roles=True)
+@app_commands.describe(username="the username to add to the whitelist")
+async def whitelist(interaction: discord.Interaction, username: str):
+    
+    # Check if the user has the admin role before proceeding
+    if not any(role.id == Admin_Role for role in interaction.user.roles):
+        await interaction.response.send_message("You can't Use this command.", ephemeral=True)
+        return
+    
+    await interaction.response.defer(ephemeral=True)
+    
+    try:
+        result = rcon_cmd(f"whitelist add {username}")
+        await interaction.followup.send(f"RCON: {result}")
+    except Exception as e:
+        await interaction.followup.send(f"RCON Error: {e}")

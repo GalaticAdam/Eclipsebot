@@ -49,9 +49,81 @@ async def on_ready():
     print("--------Started Bot--------")
 
 
+@bot.event
+async def on_member_join(member):
+    print(f"New member joined: {member.name}")
+    channel = bot.get_channel(1562246278794973194)
+    if channel:
+        await channel.send(f"Welcome {member.mention} to the server!")
 
 
 
+async def send_long_message(channel, message):
+    max_length = 2000
+    chunks = []
+    current_chunk = ""
+
+    for paragraph in message.split("\n"):
+        # If an individual paragraph exceeds the limit
+        while len(paragraph) > max_length:
+            if current_chunk:
+                chunks.append(current_chunk)
+                current_chunk = ""
+
+            chunks.append(paragraph[:max_length])
+            paragraph = paragraph[max_length:]
+
+        # Check whether adding this paragraph exceeds the limit
+        if len(current_chunk) + len(paragraph) + 1 > max_length:
+            if current_chunk:
+                chunks.append(current_chunk)
+            current_chunk = paragraph
+        else:
+            if current_chunk:
+                current_chunk += "\n" + paragraph
+            else:
+                current_chunk = paragraph
+
+    if current_chunk:
+        chunks.append(current_chunk)
+
+    for chunk in chunks:
+        await channel.send(chunk)
+
+
+
+@bot.event
+async def on_member_remove(member):
+    print(f"Member left: {member.name}")
+    channel = bot.get_channel(1572829812974813254)
+    if channel:
+        ranint = random.randint(1, 3)
+        if ranint == 1:
+            await channel.send(f"{member.mention} Has FUCKING left the GOD DAMN SERVER.")
+        elif ranint == 2:
+            await channel.send(f"{member.mention} Has quietly left the server.")
+        elif ranint == 3:
+            ranint = random.randint(1, 3)
+            if ranint == 1:
+                message = leave_message.format(
+                    member=member,
+                    name=member.name,
+                    mention=member.mention                                                          
+                )
+
+                await send_long_message(channel, message)
+            elif ranint == 2:
+                await channel.send(f"{member.mention} Has dramatically left the server.")
+            elif ranint == 3:
+                await channel.send(f"{member.mention} Has vanished without a trace.")
+        else:
+            await channel.send(f"{member.mention} Has left the server.")
+@bot.event
+async def on_message(message):
+    TICKET_CREATE_CHANNEL = int(os.getenv("Ticket_channel"))
+    if message.channel.id == TICKET_CREATE_CHANNEL:
+        await message.delete()
+    await bot.process_commands(message)
 
 
 

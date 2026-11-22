@@ -11,7 +11,10 @@ from datetime import datetime, timezone
 Rcon_Host = "192.168.1.239"
 Rcon_Port = 6009
 Rcon_Password = "11454"
-Admin_Role = int(os.getenv("Admin_roll"))
+try:
+    Admin_Role = int(os.getenv("Admin_roll"))
+except:
+    Admin_Role = 0
 
 
 

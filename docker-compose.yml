@@ -1,0 +1,11 @@
+services:
+  eclipsebot:
+    build: .
+    container_name: eclipsebot
+    restart: unless-stopped
+    volumes:
+      # Persist config, tickets, and role panel state across restarts
+      - ./data:/app/data
+    # Optional: pass secrets via host env instead of editing config.env
+    # environment:
+    #   TOKEN: ${TOKEN}

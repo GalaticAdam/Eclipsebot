@@ -1,6 +1,38 @@
 # Eclipsebot
 Discord bot for the Eclipse SMP
 
+## Docker (recommended)
+
+Runs the bot in a container that restarts automatically after crashes and on host reboot (as long as Docker itself starts on boot).
+
+1. Copy config and fill in values:
+
+   ```bash
+   cp data/config/config-template.env data/config/config.env
+   ```
+
+2. Build and start in the background:
+
+   ```bash
+   docker compose up -d --build
+   ```
+
+3. Make sure Docker starts on boot (Arch Linux example):
+
+   ```bash
+   sudo systemctl enable --now docker
+   ```
+
+Useful commands:
+
+```bash
+docker compose logs -f        # follow logs
+docker compose restart        # restart the bot
+docker compose down           # stop and remove the container
+```
+
+`data/` is mounted into the container, so `config.env`, open tickets, and the role panel message ID persist across rebuilds.
+
 ## Config
 
 Copy `data/config/config-template.env` to `data/config/config.env` and fill in values.

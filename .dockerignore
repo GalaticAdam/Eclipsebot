@@ -1,0 +1,12 @@
+.git
+.gitignore
+.vscode
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/.pytest_cache
+tempCodeRunnerFile.py
+README.md
+docker-compose.yml
+Dockerfile
+.dockerignore

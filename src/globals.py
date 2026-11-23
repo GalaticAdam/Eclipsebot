@@ -20,7 +20,14 @@ leave_messages =["This message shouldnt be seen (if so issue in leave messages f
                  "{mention} Has vanished without a trace.",
                  "{mention} Has left the server.",
                  "{mention} Has vanished without a trace.",
-                 "{mention} Has quietly left the server."
+                 "{mention} Has quietly left the server.",
+                 "{mention} was melted away.",
+                 "{mention} Has accidently clicked the leave server button.",
+                 "{mention} Has nocliped out of the server.",
+                 "{mention} Has disappeard",
+                 "{mention} Has waned away",
+                 "{mention} Was not the imposter",
+                 "{mention} Was the imposter"
                  ]
 
 class TicketManager:

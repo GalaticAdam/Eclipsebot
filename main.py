@@ -98,7 +98,7 @@ async def on_member_remove(member):
     channel = bot.get_channel(1572829812974813254)
     if channel:
         print(leave_messages)
-        ranint = random.randint(0, len(leave_messages))
+        ranint = random.randint(0, (len(leave_messages) - 1))
         if ranint == 0:
             message = leave_message.format(
                 member=member,
@@ -112,7 +112,7 @@ async def on_member_remove(member):
                 name=member.name,
                 mention=member.mention  
             )
-
+            await send_long_message(channel, message)
             
 
 @bot.event

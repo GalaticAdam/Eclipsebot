@@ -36,3 +36,53 @@ Non-bot messages in `Ticket_channel` are auto-deleted so the panel stays clean.
 4. Members click a button to toggle that role on or off.
 
 The bot needs **Manage Roles**, and its highest role must sit above every role listed in `Role_buttons`.
+
+## Docker
+
+Runs the bot in a container that restarts after crashes and host reboots (`restart: unless-stopped`). Secrets stay on the host — `config.env` is gitignored and excluded from the image.
+
+### Persist layout
+
+Compose mounts the host `./data` directory into the container at `/app/data`:
+
+| Host path | Purpose |
+| --- | --- |
+| `data/config/config.env` | Bot token and channel/role IDs |
+| `data/roles/panel.json` | Role panel message ID (survives recreates) |
+| `data/ticket/opentickets.json` | Open ticket state |
+
+### Build and run
+
+```bash
+# 1. Create config on the host (do not commit this file)
+cp data/config/config-template.env data/config/config.env
+# edit data/config/config.env with your TOKEN and IDs
+
+# 2. Build and start in the background
+docker compose up -d --build
+
+# 3. Follow logs
+docker compose logs -f
+
+# Stop
+docker compose down
+```
+
+After a host reboot, Docker starts the container again automatically (as long as the Docker daemon is set to start on boot). Recreating the container keeps state because `./data` is bind-mounted from the host.
+
+### Update to latest `main`
+
+Keeps the same `./data` mount, so `config.env`, `panel.json`, and ticket state survive the rebuild.
+
+```bash
+# From the repo root on the host
+./scripts/update.sh
+```
+
+What it does: `git fetch` + fast-forward `main`, then `docker compose up -d --build`. Equivalent one-liner if you prefer not to use the script:
+
+```bash
+git checkout main && git pull --ff-only origin main && docker compose up -d --build
+```
+
+The script refuses to run if `data/config/config.env` is missing or the working tree has uncommitted changes.

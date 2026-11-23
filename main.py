@@ -120,9 +120,15 @@ async def on_member_remove(member):
             await channel.send(f"{member.mention} Has left the server.")
 @bot.event
 async def on_message(message):
-    TICKET_CREATE_CHANNEL = int(os.getenv("Ticket_channel"))
-    if message.channel.id == TICKET_CREATE_CHANNEL:
-        await message.delete()
+    # Keep the ticket create channel clean, but never delete the bot's panel message
+    if not message.author.bot:
+        raw = os.getenv("Ticket_channel")
+        if raw and str(raw).strip():
+            try:
+                if message.channel.id == int(raw):
+                    await message.delete()
+            except (ValueError, discord.HTTPException):
+                pass
     await bot.process_commands(message)
 
 

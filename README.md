@@ -8,11 +8,20 @@ Copy `data/config/config-template.env` to `data/config/config.env` and fill in v
 | Key | Description |
 | --- | --- |
 | `TOKEN` | Discord bot token |
-| `Ticket_channel` | Channel ID where `/ticket` may be used |
+| `Ticket_channel` | Channel ID for the Create Ticket panel (and where tickets may be opened) |
 | `transcript_channel` | Channel ID for closed-ticket transcripts |
 | `whitelist_role` | Role ID that marks a user as whitelisted |
 | `Role_channel` | Channel ID where the role-button panel is posted/updated on startup |
 | `Role_buttons` | Comma-separated `role_id:Button Label` pairs for the panel |
+
+### Ticket panel
+
+1. Set `Ticket_channel` to the channel that should show the Create Ticket button (for example `1571754119494893628`).
+2. Restart the bot. On startup it posts the panel (or edits the existing one using the message ID in `data/ticket/panel.json`).
+3. Members click **Create Ticket** to open the same ticket form previously started with `/ticket`.
+4. `/ticket` remains as an optional fallback in that channel.
+
+Non-bot messages in `Ticket_channel` are auto-deleted so the panel stays clean.
 
 ### Role buttons
 

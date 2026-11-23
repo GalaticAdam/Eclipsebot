@@ -97,27 +97,24 @@ async def on_member_remove(member):
     print(f"Member left: {member.name}")
     channel = bot.get_channel(1572829812974813254)
     if channel:
-        ranint = random.randint(1, 3)
-        if ranint == 1:
-            await channel.send(f"{member.mention} Has FUCKING left the GOD DAMN SERVER.")
-        elif ranint == 2:
-            await channel.send(f"{member.mention} Has quietly left the server.")
-        elif ranint == 3:
-            ranint = random.randint(1, 3)
-            if ranint == 1:
-                message = leave_message.format(
-                    member=member,
-                    name=member.name,
-                    mention=member.mention                                                          
-                )
-
-                await send_long_message(channel, message)
-            elif ranint == 2:
-                await channel.send(f"{member.mention} Has dramatically left the server.")
-            elif ranint == 3:
-                await channel.send(f"{member.mention} Has vanished without a trace.")
+        print(leave_messages)
+        ranint = random.randint(0, len(leave_messages))
+        if ranint == 0:
+            message = leave_message.format(
+                member=member,
+                name=member.name,
+                mention=member.mention                                                          
+            )
+            await send_long_message(channel, message)
         else:
-            await channel.send(f"{member.mention} Has left the server.")
+            message = leave_messages[ranint].format(
+                member=member,
+                name=member.name,
+                mention=member.mention  
+            )
+
+            
+
 @bot.event
 async def on_message(message):
     # Keep the ticket create channel clean, but never delete the bot's panel message

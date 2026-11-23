@@ -14,6 +14,14 @@ try:
 except:
     Whitelist_role = None
 
+leave_messages =["This message shouldnt be seen (if so issue in leave messages function)",
+                 "{mention} Has FUCKING left the GOD DAMN SERVER.",
+                 "{mention} Has dramatically left the server.",
+                 "{mention} Has vanished without a trace.",
+                 "{mention} Has left the server.",
+                 "{mention} Has vanished without a trace.",
+                 "{mention} Has quietly left the server."
+                 ]
 
 class TicketManager:
     def __init__(self, file_path="data/ticket/opentickets.json"):

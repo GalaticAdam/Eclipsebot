@@ -58,7 +58,7 @@ def build_role_embed(roles: list[tuple[int, str]]) -> discord.Embed:
     lines = [f"**{label}** — <@&{role_id}>" for role_id, label in roles]
     description = (
         "Click a button below to toggle that role on or off.\n\n"
-        + "\n".join(lines)
+        + "\n\n".join(lines)
     )
     embed = discord.Embed(
         title="Role Selection",

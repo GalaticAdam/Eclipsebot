@@ -11,8 +11,11 @@ Copy `data/config/config-template.env` to `data/config/config.env` and fill in v
 | `Ticket_channel` | Channel ID for the Create Ticket panel (and where tickets may be opened) |
 | `transcript_channel` | Channel ID for closed-ticket transcripts |
 | `whitelist_role` | Role ID that marks a user as whitelisted |
+| `Admin_roll` | Role ID allowed to run admin ticket commands (e.g. `/whitelist`). Required at startup — omitting it crashes import of `Ticket.py` |
 | `Role_channel` | Channel ID where the role-button panel is posted/updated on startup |
 | `Role_buttons` | Comma-separated `role_id:Button Label` pairs for the panel |
+
+If you already have a `config.env` from an older checkout, add any new keys from `config-template.env` (especially `Admin_roll=`) before restarting.
 
 ### Ticket panel
 
@@ -36,3 +39,57 @@ Non-bot messages in `Ticket_channel` are auto-deleted so the panel stays clean.
 4. Members click a button to toggle that role on or off.
 
 The bot needs **Manage Roles**, and its highest role must sit above every role listed in `Role_buttons`.
+
+## Docker
+
+Runs the bot in a container that restarts after crashes and host reboots (`restart: unless-stopped`). Secrets stay on the host — `config.env` is gitignored and excluded from the image.
+
+### Persist layout
+
+Compose mounts the host `./data` directory into the container at `/app/data`:
+
+| Host path | Purpose |
+| --- | --- |
+| `data/config/config.env` | Bot token and channel/role IDs |
+| `data/roles/panel.json` | Role panel message ID (survives recreates) |
+| `data/ticket/panel.json` | Create Ticket panel message ID (survives recreates) |
+| `data/ticket/opentickets.json` | Open ticket state |
+
+### Build and run
+
+```bash
+# 1. Create config on the host (do not commit this file)
+cp data/config/config-template.env data/config/config.env
+# edit data/config/config.env — set TOKEN, Ticket_channel, transcript_channel,
+# whitelist_role, Admin_roll, Role_channel, Role_buttons as needed
+
+# 2. Build and start in the background
+docker compose up -d --build
+
+# 3. Follow logs
+docker compose logs -f
+
+# Stop
+docker compose down
+```
+
+`Admin_roll` must be set in the host `data/config/config.env` before the container starts; without it the bot exits while importing tickets. Updating the image does not rewrite that file — if your existing `config.env` is missing keys from the template, add them on the host (then restart or re-run `./scripts/update.sh`).
+
+After a host reboot, Docker starts the container again automatically (as long as the Docker daemon is set to start on boot). Recreating the container keeps state because `./data` is bind-mounted from the host.
+
+### Update to latest `main`
+
+Keeps the same `./data` mount, so `config.env`, `panel.json`, and ticket state survive the rebuild.
+
+```bash
+# From the repo root on the host
+./scripts/update.sh
+```
+
+What it does: `git fetch` + fast-forward `main`, then `docker compose up -d --build`. Equivalent one-liner if you prefer not to use the script:
+
+```bash
+git checkout main && git pull --ff-only origin main && docker compose up -d --build
+```
+
+The script refuses to run if `data/config/config.env` is missing or the working tree has uncommitted changes.

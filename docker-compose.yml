@@ -1,0 +1,9 @@
+services:
+  eclipsebot:
+    build: .
+    container_name: eclipsebot
+    restart: unless-stopped
+    # Persist config + runtime JSON across recreates and reboots.
+    # Host path ./data must include config/config.env (never bake secrets into the image).
+    volumes:
+      - ./data:/app/data

@@ -35,6 +35,9 @@ async def send_long_message(channel, message):
 
 
 @bot.tree.command(name="send_message", description="Send a message to a specified channel")
-async def send_message(interaction: discord.Interaction, channel: discord.TextChannel, message: str):3
+async def send_message(interaction: discord.Interaction, channel: discord.TextChannel, message: str):
+    if not interaction.user.guild_permissions.manage_messages:
+        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
+        return
     await send_long_message(channel, message)
     await interaction.response.send_message(f"Message sent to {channel.mention}", ephemeral=True)

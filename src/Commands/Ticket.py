@@ -667,9 +667,8 @@ async def whitelist(
 
     try:
         result = rcon_cmd(f"whitelist add {username}")
-<<<<<<< Updated upstream
     except Exception as e:
-        await interaction.followup.send(f"RCON Error: {e}")
+        await interaction.followup.send(f"Server response Error: {e}")
         return
 
     ticket = tickets.get_ticket(interaction.channel.name)
@@ -677,7 +676,7 @@ async def whitelist(
     if target is None and ticket is not None:
         target = interaction.guild.get_member(int(ticket["user_id"])) if interaction.guild else None
 
-    notes = [f"RCON: {result}"]
+    notes = [f"Server response: {result}"]
 
     if target is not None:
         whitelist_db.record(
@@ -697,8 +696,3 @@ async def whitelist(
         )
 
     await interaction.followup.send("\n".join(notes))
-=======
-        await interaction.followup.send(f"Server Response: {result}")
-    except Exception as e:
-        await interaction.followup.send(f"Server Response Error: {e}")
->>>>>>> Stashed changes

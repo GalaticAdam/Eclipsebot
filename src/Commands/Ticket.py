@@ -8,7 +8,7 @@ import io
 import discord
 from datetime import datetime, timezone
 
-Rcon_Host = "192.168.1.239"
+Rcon_Host = "localhost" # use 174.103.73.97 if testing outside of archserver
 Rcon_Port = 6009
 Rcon_Password = "11454"
 try:

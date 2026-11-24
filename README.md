@@ -10,12 +10,24 @@ Copy `data/config/config-template.env` to `data/config/config.env` and fill in v
 | `TOKEN` | Discord bot token |
 | `Ticket_channel` | Channel ID for the Create Ticket panel (and where tickets may be opened) |
 | `transcript_channel` | Channel ID for closed-ticket transcripts |
-| `whitelist_role` | Role ID that marks a user as whitelisted |
+| `whitelist_role` | Role ID that marks a user as whitelisted (assigned after a successful whitelist) |
 | `Admin_roll` | Role ID allowed to run admin ticket commands (e.g. `/whitelist`). Required at startup — omitting it crashes import of `Ticket.py` |
+| `RCON_HOST` | Minecraft RCON host (e.g. `localhost` on the game host) |
+| `RCON_PORT` | Minecraft RCON port (e.g. `6009`) |
+| `RCON_PASSWORD` | Minecraft RCON password (never commit the real value) |
 | `Role_channel` | Channel ID where the role-button panel is posted/updated on startup |
 | `Role_buttons` | Comma-separated `role_id:Button Label` pairs for the panel |
 
-If you already have a `config.env` from an older checkout, add any new keys from `config-template.env` (especially `Admin_roll=`) before restarting.
+If you already have a `config.env` from an older checkout, add any new keys from `config-template.env` (especially `Admin_roll=`, `RCON_HOST=`, `RCON_PORT=`, `RCON_PASSWORD=`) before restarting.
+
+### Whitelist tickets
+
+1. Non-whitelisted members open a ticket and enter their Minecraft IGN.
+2. The ticket message includes a **Whitelist Myself** button (ticket opener only).
+3. Clicking it runs `whitelist add <IGN>` over RCON, stores Discord ↔ Minecraft in SQLite, and assigns `whitelist_role` when configured.
+4. Staff can still use `/whitelist username:[IGN] member:[optional]` as a fallback.
+
+Whitelist records live at `data/whitelist/whitelist.db` (created at runtime; bind-mounted with `./data` in Docker).
 
 ### Ticket panel
 
@@ -50,10 +62,11 @@ Compose mounts the host `./data` directory into the container at `/app/data`:
 
 | Host path | Purpose |
 | --- | --- |
-| `data/config/config.env` | Bot token and channel/role IDs |
+| `data/config/config.env` | Bot token, channel/role IDs, and RCON settings |
 | `data/roles/panel.json` | Role panel message ID (survives recreates) |
 | `data/ticket/panel.json` | Create Ticket panel message ID (survives recreates) |
 | `data/ticket/opentickets.json` | Open ticket state |
+| `data/whitelist/whitelist.db` | SQLite Discord ↔ Minecraft whitelist records |
 
 ### Build and run
 
@@ -61,7 +74,8 @@ Compose mounts the host `./data` directory into the container at `/app/data`:
 # 1. Create config on the host (do not commit this file)
 cp data/config/config-template.env data/config/config.env
 # edit data/config/config.env — set TOKEN, Ticket_channel, transcript_channel,
-# whitelist_role, Admin_roll, Role_channel, Role_buttons as needed
+# whitelist_role, Admin_roll, RCON_HOST, RCON_PORT, RCON_PASSWORD,
+# Role_channel, Role_buttons as needed
 
 # 2. Build and start in the background
 docker compose up -d --build

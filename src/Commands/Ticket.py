@@ -226,13 +226,8 @@ async def start_ticket_flow(interaction: discord.Interaction) -> None:
                 + f"> If you where told to could join this server please tell us there name and we will add them to the ticket\n\n"
                 + f"> Server ip is Eclipse-smpUS.GalaticServer.com\n\n"
                 + f"Discrod Username: `{submit_interaction.user}`\nMinecraft Username: `{IGN_}`\nTAC: {TAC_}\n\n"
-<<<<<<< Updated upstream
                 + f"-# Note: Tickets are manually reviewed and may take some time for someone to reach you, sorry for the hold",
                 view=SelfWhitelistView(),
-=======
-                + f"-# Note: Tickets are manually reviewed and may take some time for someone to reach you, sorry for the hold"
-                
->>>>>>> Stashed changes
             )
 
             tickets.update_ticket(

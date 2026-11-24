@@ -1,3 +1,5 @@
 data/config/config.env
+data/whitelist/*.db
+data/whitelist/*.db-*
 tempCodeRunnerFile.py
 .pyc

@@ -2,22 +2,66 @@
 
 from src.imports import *
 from src.globals import *
+from src.whitelist_db import whitelist_db
 
 import os
 import io
 import discord
 from datetime import datetime, timezone
 
-Rcon_Host = "localhost" # use 174.103.73.97 if testing outside of archserver
-Rcon_Port = 6009
-Rcon_Password = "11454"
 try:
     Admin_Role = int(os.getenv("Admin_roll"))
-except:
+except (TypeError, ValueError):
     Admin_Role = 0
 
 TICKET_PANEL_PATH = Path("data/ticket/panel.json")
 _ticket_view_registered = False
+_self_whitelist_view_registered = False
+
+
+def get_rcon_config() -> tuple[str, int, str] | None:
+    """Read RCON settings from env. Returns None if incomplete."""
+    host = (os.getenv("RCON_HOST") or "").strip()
+    port_raw = (os.getenv("RCON_PORT") or "").strip()
+    password = (os.getenv("RCON_PASSWORD") or "").strip()
+    if not host or not port_raw or not password:
+        return None
+    try:
+        port = int(port_raw)
+    except ValueError:
+        print(f"Invalid RCON_PORT value: {port_raw}")
+        return None
+    return host, port, password
+
+
+def rcon_cmd(command: str) -> str:
+    config = get_rcon_config()
+    if config is None:
+        raise RuntimeError(
+            "RCON is not configured. Set RCON_HOST, RCON_PORT, and RCON_PASSWORD "
+            "in data/config/config.env"
+        )
+    host, port, password = config
+    with mcrcon.MCRcon(host, password, port=port) as mcr:
+        return mcr.command(command)
+
+
+async def assign_whitelist_role(member: discord.Member) -> str | None:
+    """Assign whitelist_role if configured. Returns an error string on failure."""
+    if Whitelist_role is None:
+        return None
+    role = member.guild.get_role(Whitelist_role)
+    if role is None:
+        return "whitelist_role is set but that role was not found on this server."
+    if role in member.roles:
+        return None
+    try:
+        await member.add_roles(role, reason="Minecraft whitelist")
+    except discord.Forbidden:
+        return "I do not have permission to assign the whitelist role."
+    except discord.HTTPException as e:
+        return f"Could not assign whitelist role: {e}"
+    return None
 
 
 def _load_ticket_panel_message_id() -> int | None:
@@ -153,7 +197,7 @@ async def start_ticket_flow(interaction: discord.Interaction) -> None:
         modal.add_item(TAC)
 
         async def WhitelistTicket(submit_interaction: discord.Interaction):
-            IGN_ = IGN.value
+            IGN_ = (IGN.value or "").strip()
             TAC_ = TAC.value
             ticket = tickets.create_ticket(
                 user_id=submit_interaction.user.id,
@@ -178,13 +222,19 @@ async def start_ticket_flow(interaction: discord.Interaction) -> None:
                 + f"||<@&1261418176944541727>||"
                 f"\n**BEFORE** joining please read the rules at <#1548427583018766469>\n\n"
                 + f"> this is a whitelist server and your minecraft and discord account will be looked at to see if you fit this community\n\n"
-                + f"> If you still want to join provide a ign, if not then please close this ticket with /closeticket\n\n"
+                + f"> If you still want to join, click **Whitelist Myself** below (or ask staff if something goes wrong).\n\n"
                 + f"> If you where told to could join this server please tell us there name and we will add them to the ticket\n\n"
                 + f"Discrod Username: `{submit_interaction.user}`\nMinecraft Username: `{IGN_}`\nTAC: {TAC_}\n\n"
-                + f"-# Note: Tickets are manually reviewed and may take some time for someone to reach you, sorry for the hold"
+                + f"-# Note: Tickets are manually reviewed and may take some time for someone to reach you, sorry for the hold",
+                view=SelfWhitelistView(),
             )
 
-            tickets.update_ticket(ticket["id"], channel_id=ticket_channel.id)
+            tickets.update_ticket(
+                ticket["id"],
+                channel_id=ticket_channel.id,
+                ticket_type="whitelist",
+                minecraft_username=IGN_,
+            )
             await submit_interaction.response.send_message(
                 "Ticket has been created here " + ticket_channel.mention, ephemeral=True
             )
@@ -218,9 +268,113 @@ class TicketPanelView(View):
         self.add_item(CreateTicketButton())
 
 
+class SelfWhitelistButton(Button):
+    def __init__(self):
+        super().__init__(
+            label="Whitelist Myself",
+            style=discord.ButtonStyle.success,
+            custom_id="ticket:self_whitelist",
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        if interaction.guild is None or not isinstance(interaction.user, discord.Member):
+            await interaction.response.send_message(
+                "This can only be used in a server.",
+                ephemeral=True,
+            )
+            return
+
+        ticket = tickets.get_ticket(interaction.channel.name)
+        if ticket is None:
+            await interaction.response.send_message(
+                "This button only works in an open whitelist ticket.",
+                ephemeral=True,
+            )
+            return
+
+        if str(interaction.user.id) != str(ticket["user_id"]):
+            await interaction.response.send_message(
+                "Only the ticket opener can use **Whitelist Myself**. "
+                "Staff can use `/whitelist` if needed.",
+                ephemeral=True,
+            )
+            return
+
+        minecraft_username = (ticket.get("minecraft_username") or "").strip()
+        if not minecraft_username:
+            await interaction.response.send_message(
+                "No Minecraft username is stored on this ticket. "
+                "Ask staff to run `/whitelist` with your IGN.",
+                ephemeral=True,
+            )
+            return
+
+        await interaction.response.defer(ephemeral=True)
+
+        try:
+            result = rcon_cmd(f"whitelist add {minecraft_username}")
+        except Exception as e:
+            await interaction.followup.send(
+                f"Could not whitelist via RCON: {e}",
+                ephemeral=True,
+            )
+            return
+
+        discord_tag = str(interaction.user)
+        whitelist_db.record(
+            discord_user_id=interaction.user.id,
+            discord_tag=discord_tag,
+            minecraft_username=minecraft_username,
+            source="self_whitelist",
+            ticket_id=ticket["id"],
+        )
+
+        role_error = await assign_whitelist_role(interaction.user)
+        role_note = f"\nRole: {role_error}" if role_error else ""
+
+        # Disable the button on this message after a successful whitelist.
+        try:
+            disabled_view = View(timeout=None)
+            disabled_button = Button(
+                label="Whitelisted",
+                style=discord.ButtonStyle.secondary,
+                disabled=True,
+                custom_id="ticket:self_whitelist:done",
+            )
+            disabled_view.add_item(disabled_button)
+            await interaction.message.edit(view=disabled_view)
+        except (discord.HTTPException, AttributeError) as e:
+            print(f"Could not disable self-whitelist button: {e}")
+
+        await interaction.followup.send(
+            f"You have been whitelisted as `{minecraft_username}`.\n"
+            f"RCON: {result}{role_note}",
+            ephemeral=True,
+        )
+
+
+class SelfWhitelistView(View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.add_item(SelfWhitelistButton())
+
+
+def register_persistent_ticket_views() -> None:
+    """Register persistent ticket UI views once (survives bot restarts)."""
+    global _ticket_view_registered, _self_whitelist_view_registered
+
+    if not _ticket_view_registered:
+        bot.add_view(TicketPanelView())
+        _ticket_view_registered = True
+
+    if not _self_whitelist_view_registered:
+        bot.add_view(SelfWhitelistView())
+        _self_whitelist_view_registered = True
+
+
 async def setup_ticket_panel():
     """Post or refresh the Create Ticket panel using Ticket_channel."""
-    global _ticket_view_registered
+    register_persistent_ticket_views()
 
     channel_id = get_ticket_channel_id()
     if channel_id is None:
@@ -228,9 +382,6 @@ async def setup_ticket_panel():
         return
 
     view = TicketPanelView()
-    if not _ticket_view_registered:
-        bot.add_view(view)
-        _ticket_view_registered = True
 
     channel = bot.get_channel(channel_id)
     if channel is None:
@@ -477,27 +628,65 @@ async def closeticket(interaction: discord.Interaction):
     await asyncio.sleep(10)  # Give some time for the followup message to be sent before deleting the channel
     # Delete the ticket channel
     await interaction.channel.delete()
-    
-    
-def rcon_cmd(command):
-    with mcrcon.MCRcon(Rcon_Host, Rcon_Password, port=Rcon_Port) as mcr:
-        return mcr.command(command)
-    
-    
-@bot.tree.command(name="whitelist",description="Adds a user to the whitelist role")
+
+
+@bot.tree.command(
+    name="whitelist",
+    description="Staff fallback: add a Minecraft username to the server whitelist via RCON",
+)
 @app_commands.default_permissions(manage_roles=True)
-@app_commands.describe(username="the username to add to the whitelist")
-async def whitelist(interaction: discord.Interaction, username: str):
-    
+@app_commands.describe(
+    username="Minecraft username to whitelist",
+    member="Optional Discord member to link in the database / assign whitelist role",
+)
+async def whitelist(
+    interaction: discord.Interaction,
+    username: str,
+    member: discord.Member | None = None,
+):
     # Check if the user has the admin role before proceeding
     if not any(role.id == Admin_Role for role in interaction.user.roles):
         await interaction.response.send_message("You can't Use this command.", ephemeral=True)
         return
-    
+
+    username = (username or "").strip()
+    if not username:
+        await interaction.response.send_message(
+            "Provide a Minecraft username.",
+            ephemeral=True,
+        )
+        return
+
     await interaction.response.defer(ephemeral=True)
-    
+
     try:
         result = rcon_cmd(f"whitelist add {username}")
-        await interaction.followup.send(f"RCON: {result}")
     except Exception as e:
         await interaction.followup.send(f"RCON Error: {e}")
+        return
+
+    ticket = tickets.get_ticket(interaction.channel.name)
+    target = member
+    if target is None and ticket is not None:
+        target = interaction.guild.get_member(int(ticket["user_id"])) if interaction.guild else None
+
+    notes = [f"RCON: {result}"]
+
+    if target is not None:
+        whitelist_db.record(
+            discord_user_id=target.id,
+            discord_tag=str(target),
+            minecraft_username=username,
+            source="staff_whitelist",
+            ticket_id=ticket["id"] if ticket else None,
+        )
+        role_error = await assign_whitelist_role(target)
+        notes.append(f"Linked Discord: {target} (`{target.id}`)")
+        if role_error:
+            notes.append(f"Role: {role_error}")
+    else:
+        notes.append(
+            "No Discord member linked (pass `member`, or run inside their ticket)."
+        )
+
+    await interaction.followup.send("\n".join(notes))

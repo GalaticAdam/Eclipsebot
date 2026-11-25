@@ -282,7 +282,6 @@ class SelfWhitelistButton(Button):
         if interaction.guild is None or not isinstance(interaction.user, discord.Member):
             await interaction.response.send_message(
                 "This can only be used in a server.",
-                ephemeral=True,
             )
             return
 
@@ -290,7 +289,6 @@ class SelfWhitelistButton(Button):
         if ticket is None:
             await interaction.response.send_message(
                 "This button only works in an open whitelist ticket.",
-                ephemeral=True,
             )
             return
 
@@ -298,7 +296,6 @@ class SelfWhitelistButton(Button):
             await interaction.response.send_message(
                 "Only the ticket opener can use **Whitelist Myself**. "
                 "Staff can use `/whitelist` if needed.",
-                ephemeral=True,
             )
             return
 
@@ -307,18 +304,16 @@ class SelfWhitelistButton(Button):
             await interaction.response.send_message(
                 "No Minecraft username is stored on this ticket. "
                 "Ask staff to run `/whitelist` with your IGN.",
-                ephemeral=True,
             )
             return
 
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.defer()
 
         try:
             result = rcon_cmd(f"whitelist add {minecraft_username}")
         except Exception as e:
             await interaction.followup.send(
                 f"Could not whitelist via RCON: {e}",
-                ephemeral=True,
             )
             return
 
@@ -351,7 +346,6 @@ class SelfWhitelistButton(Button):
         await interaction.followup.send(
             f"You have been whitelisted as `{minecraft_username}`.\n"
             f"RCON: {result}{role_note}",
-            ephemeral=True,
         )
 
 
@@ -604,7 +598,7 @@ async def remove(interaction: discord.Integration, user_id: discord.Member):
 @bot.tree.command(name="closeticket",description="Closes a Ticket")
 @app_commands.default_permissions(manage_channels=True)
 async def closeticket(interaction: discord.Interaction):
-    await interaction.response.defer(ephemeral=True)
+    await interaction.response.defer()
     success = await send_ticket_transcript(
         interaction,
         tickets,
@@ -614,7 +608,6 @@ async def closeticket(interaction: discord.Interaction):
     if not success:
         await interaction.followup.send(
             "Could not find the ticket.",
-            ephemeral=True
         )
         return
 
@@ -625,7 +618,6 @@ async def closeticket(interaction: discord.Interaction):
     tickets.close_ticket(ticket["id"])
     await interaction.followup.send(
             "Ticket has been closed and the transcript has been sent.",
-            ephemeral=True
         )
     await asyncio.sleep(10)  # Give some time for the followup message to be sent before deleting the channel
     # Delete the ticket channel
@@ -655,11 +647,10 @@ async def whitelist(
     if not username:
         await interaction.response.send_message(
             "Provide a Minecraft username.",
-            ephemeral=True,
         )
         return
 
-    await interaction.response.defer(ephemeral=True)
+    await interaction.response.defer()
 
     try:
         result = rcon_cmd(f"whitelist add {username}")

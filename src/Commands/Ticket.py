@@ -224,7 +224,7 @@ async def start_ticket_flow(interaction: discord.Interaction) -> None:
                 + f"> this is a whitelist server and your minecraft and discord account will be looked at to see if you fit this community\n\n"
                 + f"> If you still want to join, click **Whitelist Myself** below (or ask staff if something goes wrong).\n\n"
                 + f"> If you where told to could join this server please tell us there name and we will add them to the ticket\n\n"
-                + f"> Server ip is Eclipse-smpUS.GalaticServer.com\n\n"
+                + f"> Server ip is \n``Eclipse-smpUS.GalaticServer.com``\n\n"
                 + f"Discrod Username: `{submit_interaction.user}`\nMinecraft Username: `{IGN_}`\nTAC: {TAC_}\n\n"
                 + f"-# Note: Tickets are manually reviewed and may take some time for someone to reach you, sorry for the hold",
                 view=SelfWhitelistView(),

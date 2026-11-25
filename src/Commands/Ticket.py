@@ -173,6 +173,7 @@ async def start_ticket_flow(interaction: discord.Interaction) -> None:
             )
             await ticket_channel.send(
                 f"**Someone will be with you shortly, please provide any releavent info you may want to share to us about this issue\n\n If this is a player rebort please post as much information you can regarding the concern**\n"
+                + f"||<@&1572816846602641578>||\n"
                 + f"> In game name: {IGN_}\n"
                 + f"> Ticket reason: {Issue_}\n"
                 + f"> Ticket location: {Coords_}\n"
@@ -219,7 +220,7 @@ async def start_ticket_flow(interaction: discord.Interaction) -> None:
             )
             await ticket_channel.send(
                 f"**Welcome to Eclips SMP**\n"
-                + f"||<@&1261418176944541727>||"
+                + f"||<@&1572816846602641578>||\n"
                 f"\n**BEFORE** joining please read the rules at <#1548427583018766469>\n\n"
                 + f"> this is a whitelist server and your minecraft and discord account will be looked at to see if you fit this community\n\n"
                 + f"> If you still want to join, click **Whitelist Myself** below (or ask staff if something goes wrong).\n\n"
